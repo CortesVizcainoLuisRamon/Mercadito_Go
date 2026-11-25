@@ -1,0 +1,19 @@
+<!--
+  Plantilla de META-INF/context.xml (conexión de Tomcat a MySQL).
+  Cópiala como context.xml y escribe el usuario y la contraseña de tu MySQL:
+      cp META-INF/context.example.xml META-INF/context.xml
+  context.xml está en .gitignore para que la contraseña nunca se suba al repositorio.
+-->
+<Context>
+	<Resource
+		name="jdbc/datasource_Servicio"
+		auth="Container"
+		type="javax.sql.DataSource"
+		maxActive="100"
+		maxIdle="30"
+		maxWait="10000"
+		username="TU_USUARIO_MYSQL"
+		password="TU_PASSWORD_MYSQL"
+		driverClassName="com.mysql.cj.jdbc.Driver"
+		url="jdbc:mysql://localhost/servicio_web?serverTimezone=UTC"/>
+</Context>

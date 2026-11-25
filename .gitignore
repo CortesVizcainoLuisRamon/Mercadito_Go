@@ -1,0 +1,23 @@
+# Credenciales: la conexión real a MySQL nunca se sube (usa META-INF/context.example.xml)
+backend/META-INF/context.xml
+
+# Certificados y llaves
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+*.crt
+server.xml
+
+# Archivos generados al compilar
+*.class
+*.war
+backend/WEB-INF/lib/
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

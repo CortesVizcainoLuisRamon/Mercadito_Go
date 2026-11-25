@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<!--
+	prueba.html — Mercadito Go (front-end de la Tarea 7)
+	Prototipo de comercio electrónico hecho con HTML, CSS y JavaScript (sin frameworks).
+
+	Archivos:
+		prueba.html   las 6 pantallas (cada una es un <section>)
+		estilos.css   todos los estilos (los colores están al inicio, en :root)
+		app.js        la lógica: navegación entre pantallas y llamadas al servicio web
+		WSClient.js   cliente del servicio web proporcionado por el profesor (sin modificaciones)
+-->
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="theme-color" content="#F5FAF7">
+	<meta name="description" content="Mercadito Go — tu súper, desde el celular.">
+	<title>Mercadito Go</title>
+	<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23CDEFE0'/%3E%3Cg transform='rotate(-18 24 24)'%3E%3Cpath d='M15 13h22a3 3 0 0 1 3 3v16a3 3 0 0 1-3 3H15l-8-11z' fill='%23FF6B4A'/%3E%3Ccircle cx='14' cy='24' r='2.4' fill='%23CDEFE0'/%3E%3Cpath d='M20 30V18l6 6 6-6v12' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E">
+
+	<!-- Tipografías: Bricolage Grotesque (títulos) y Figtree (texto) -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Figtree:wght@400;500;600;700&display=swap">
+
+	<link rel="stylesheet" href="estilos.css">
+	<!-- Cliente del servicio web proporcionado por el profesor (sin modificaciones) -->
+	<script src="WSClient.js"></script>
+	<script src="app.js" defer></script>
+</head>
+<body>
+
+<!-- =====================================================================
+	Íconos (SVG). Se usan así: <svg class="i"><use href="#i-carrito"/></svg>
+	===================================================================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+	<symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+	<symbol id="i-carrito" viewBox="0 0 24 24"><path d="M3 4h2.2l2.3 11.2a1.6 1.6 0 0 0 1.6 1.3h8.5a1.6 1.6 0 0 0 1.6-1.2L21 8H6.3"/><circle cx="9.5" cy="20" r="1.2" fill="currentColor"/><circle cx="17.5" cy="20" r="1.2" fill="currentColor"/></symbol>
+	<symbol id="i-agregar" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></symbol>
+	<symbol id="i-usuario" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20c1.2-3.6 4-5.4 7.5-5.4s6.3 1.8 7.5 5.4"/></symbol>
+	<symbol id="i-atras" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+	<symbol id="i-salir" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></symbol>
+	<symbol id="i-basura" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+	<symbol id="i-camara" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.3" r="3.4"/></symbol>
+	<symbol id="i-botella" viewBox="0 0 24 24"><path d="M9 3h6v3l2 3v12H7V9l2-3z"/></symbol>
+	<symbol id="i-bolsa" viewBox="0 0 24 24"><path d="M5 8h14l-1.5 12h-11zM9 8a3 3 0 0 1 6 0"/></symbol>
+	<symbol id="i-canasta" viewBox="0 0 24 24"><path d="M4 9h16M6 9l2-5M18 9l-2-5M5 9l1.5 11h11L19 9"/></symbol>
+	<symbol id="i-casa" viewBox="0 0 24 24"><path d="M3 12l9-8 9 8M7 10v9h10v-9"/></symbol>
+	<symbol id="i-menos" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+	<symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+	<symbol id="i-abajo" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+	<!-- Logo de Mercadito Go: etiqueta de precio con la M -->
+	<symbol id="logo" viewBox="0 0 48 48">
+		<g transform="rotate(-18 24 24)">
+			<path d="M15 13h22a3 3 0 0 1 3 3v16a3 3 0 0 1-3 3H15l-8-11z" fill="#FF6B4A" stroke="none"/>
+			<circle cx="14" cy="24" r="2.4" fill="#CDEFE0" stroke="none"/>
+			<path d="M20 30V18l6 6 6-6v12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+		</g>
+	</symbol>
+</svg>
+
+<div id="root">
+
+<!-- =====================================================================
+	Pantallas sin sesión: inicio de sesión y registro
+	===================================================================== -->
+<main class="app-pantalla app-pantalla--acceso" id="zona_acceso" hidden>
+
+	<!-- ===================== Inicio de sesión ===================== -->
+	<section class="acceso" id="pantalla_entrar" hidden>
+		<header class="acceso-portada">
+			<!-- La cuadrícula de íconos decorativa se llena desde app.js -->
+			<div class="patron" id="patron" aria-hidden="true"></div>
+			<div class="acceso-titulo">
+				<span class="acceso-logo" aria-hidden="true"><svg width="34" height="34"><use href="#logo"/></svg></span>
+				<div>
+					<h1>Mercadito Go</h1>
+					<p>Tu súper, desde el celular.</p>
+				</div>
+			</div>
+		</header>
+
+		<form class="acceso-hoja" id="form_login">
+			<label class="campo">
+				<span class="campo-etiqueta">Email</span>
+				<input class="control" type="email" id="login_email" autocomplete="username" placeholder="tucorreo@ejemplo.com" required>
+			</label>
+			<label class="campo">
+				<span class="campo-etiqueta">Contraseña</span>
+				<input class="control" type="password" id="login_password" autocomplete="current-password" required>
+			</label>
+			<button class="btn btn--primario btn--ancho" type="submit" id="login_boton">Entrar</button>
+			<a class="enlace-centrado" href="#/registro">Crear una cuenta</a>
+		</form>
+	</section>
+
+	<!-- ===================== Registro de usuario ===================== -->
+	<section class="registro" id="pantalla_registro" hidden>
+		<header class="banda">
+			<a href="#/entrar" class="banda-regresar">
+				<svg class="i" width="22" height="22"><use href="#i-atras"/></svg>
+				Iniciar sesión
+			</a>
+			<h1>Crea tu cuenta</h1>
+			<p>Solo te toma un minuto.</p>
+		</header>
+
+		<div class="hoja">
+			<form class="tarjeta formulario" id="form_registro">
+				<div class="foto-usuario">
+					<div class="avatar avatar--gris" id="registro_avatar" style="width:64px;height:64px">
+						<svg class="i" width="30" height="30"><use href="#i-usuario"/></svg>
+					</div>
+					<label class="chip-boton">
+						<span id="registro_texto_foto">Elegir foto</span>
+						<input type="file" accept="image/*" id="registro_archivo" hidden>
+					</label>
+					<button type="button" class="chip-boton chip-boton--quitar" id="registro_quitar_foto" hidden>Quitar</button>
+				</div>
+
+				<label class="campo">
+					<span class="campo-etiqueta">Email<span aria-hidden="true"> *</span></span>
+					<input class="control" type="email" id="registro_email" autocomplete="email" placeholder="tucorreo@ejemplo.com" required>
+				</label>
+				<label class="campo">
+					<span class="campo-etiqueta">Contraseña<span aria-hidden="true"> *</span></span>
+					<input class="control" type="password" id="registro_password" autocomplete="new-password" required>
+				</label>
+				<label class="campo">
+					<span class="campo-etiqueta">Nombre<span aria-hidden="true"> *</span></span>
+					<input class="control" id="registro_nombre" autocomplete="given-name" required>
+				</label>
+				<div class="dos-columnas">
+					<label class="campo">
+						<span class="campo-etiqueta">Apellido paterno<span aria-hidden="true"> *</span></span>
+						<input class="control" id="registro_apellido_paterno" required>
+					</label>
+					<label class="campo">
+						<span class="campo-etiqueta">Apellido materno</span>
+						<input class="control" id="registro_apellido_materno">
+					</label>
+				</div>
+				<label class="campo">
+					<span class="campo-etiqueta">Fecha de nacimiento<span aria-hidden="true"> *</span></span>
+					<input class="control" type="datetime-local" id="registro_fecha_nacimiento" required>
+				</label>
+				<div class="dos-columnas">
+					<label class="campo">
+						<span class="campo-etiqueta">Teléfono</span>
+						<input class="control" type="tel" id="registro_telefono" inputmode="numeric" pattern="[0-9]{7,15}" title="Solo números">
+					</label>
+					<label class="campo">
+						<span class="campo-etiqueta">Género</span>
+						<select class="control" id="registro_genero">
+							<option value="">Elegir</option>
+							<option value="M">Masculino</option>
+							<option value="F">Femenino</option>
+						</select>
+					</label>
+				</div>
+				<button class="btn btn--primario btn--ancho" type="submit" id="registro_boton">Registrar usuario</button>
+			</form>
+		</div>
+	</section>
+</main>
+
+<!-- =====================================================================
+	Pantallas con sesión (llevan la barra de pestañas abajo)
+	===================================================================== -->
+<div class="app" id="zona_app" hidden>
+<main class="app-pantalla">
+
+	<!-- ===================== Compra de artículos (RF-FE-2, 2.1, 2.2, 2.3) ===================== -->
+	<section class="compra" id="pantalla_compra" hidden>
+		<header class="compra-encabezado">
+			<div class="compra-saludo">
+				<div>
+					<p id="compra_saludo">Hola</p>
+					<h1>¿Qué vas a llevar?</h1>
+				</div>
+				<!-- RF-FE-2.3: botón "Carrito de compra" dentro de la pantalla de compra -->
+				<a href="#/carrito" class="boton-carrito">
+					<span class="boton-carrito-icono">
+						<svg class="i" width="19" height="19"><use href="#i-carrito"/></svg>
+						<b id="compra_piezas" hidden>0</b>
+					</span>
+					<span>Carrito de compra</span>
+				</a>
+			</div>
+			<form class="buscador" role="search" id="form_buscar">
+				<svg class="i" width="18" height="18"><use href="#i-buscar"/></svg>
+				<input type="search" id="buscar_palabra" placeholder="Nombre o descripción" aria-label="Palabra a buscar" enterkeyhint="search">
+				<button type="submit" class="buscador-boton">Buscar</button>
+			</form>
+		</header>
+
+		<div class="contenido">
+			<div class="filtros" role="group" aria-label="Filtrar artículos">
+				<button type="button" class="filtro filtro--activo" data-filtro="todos" aria-pressed="true">Todos</button>
+				<button type="button" class="filtro" data-filtro="existencia" aria-pressed="false">Con existencia</button>
+				<button type="button" class="filtro" data-filtro="precio" aria-pressed="false">Menor precio</button>
+			</div>
+
+			<p class="resultado-busqueda" id="resultado_busqueda" hidden>
+				<span id="resultado_texto"></span> ·
+				<button type="button" class="enlace" id="ver_todo">Ver todo</button>
+			</p>
+
+			<!-- RF-FE-2.1: aquí se dibujan las tarjetas de los artículos encontrados -->
+			<div id="articulos"></div>
+		</div>
+	</section>
+
+	<!-- ===================== Artículos en el carrito (RF-FE-2.3 a 2.6) ===================== -->
+	<section class="carrito" id="pantalla_carrito" hidden>
+		<header class="encabezado">
+			<div class="encabezado-fila">
+				<h1>Artículos en el carrito</h1>
+				<span class="logo-circulo" aria-hidden="true"><svg width="27" height="27"><use href="#logo"/></svg></span>
+			</div>
+			<p class="encabezado-sub" id="carrito_subtitulo">Revisa lo que vas a llevar</p>
+		</header>
+		<div class="carrito-cuerpo">
+			<div class="contenido">
+				<!-- Aquí se dibujan los renglones del carrito -->
+				<div id="carrito_lista"></div>
+			</div>
+
+			<footer class="ticket" id="carrito_ticket" hidden>
+				<div class="ticket-total">
+					<span>Total de la compra</span>
+					<strong id="carrito_total">$0.00</strong>
+				</div>
+				<div class="dos-columnas">
+					<!-- RF-FE-2.5 -->
+					<button type="button" class="btn btn--secundario btn--texto-peligro" id="eliminar_carrito">Eliminar carrito</button>
+					<!-- RF-FE-2.6 -->
+					<a class="btn btn--primario" href="#/compra">Seguir comprando</a>
+				</div>
+			</footer>
+		</div>
+	</section>
+
+	<!-- ===================== Captura de artículo (RF-FE-1) ===================== -->
+	<section id="pantalla_captura" hidden>
+		<header class="encabezado encabezado--estrecho">
+			<div class="encabezado-fila">
+				<h1>Captura de artículo</h1>
+				<span class="logo-circulo" aria-hidden="true"><svg width="27" height="27"><use href="#logo"/></svg></span>
+			</div>
+			<p class="encabezado-sub">Agrega un producto al stock con su foto, precio y existencia.</p>
+		</header>
+		<div class="contenido contenido--estrecho">
+			<form class="tarjeta formulario" id="form_captura">
+				<label class="foto-articulo" id="captura_foto">
+					<img id="captura_foto_img" alt="Foto del artículo" hidden>
+					<span class="foto-articulo-cambiar" id="captura_foto_cambiar" hidden>Cambiar foto</span>
+					<span class="foto-articulo-hueco" id="captura_foto_hueco">
+						<svg class="i i--fino" width="34" height="34"><use href="#i-camara"/></svg>
+						Toca para tomar o elegir la foto
+					</span>
+					<input type="file" accept="image/*" id="captura_archivo" hidden>
+				</label>
+
+				<label class="campo">
+					<span class="campo-etiqueta">Nombre del artículo<span aria-hidden="true"> *</span></span>
+					<input class="control" id="captura_nombre" maxlength="100" required>
+				</label>
+				<label class="campo">
+					<span class="campo-etiqueta">Descripción<span aria-hidden="true"> *</span></span>
+					<textarea class="control" id="captura_descripcion" rows="3" maxlength="500" required></textarea>
+				</label>
+				<div class="dos-columnas">
+					<label class="campo">
+						<span class="campo-etiqueta">Precio<span aria-hidden="true"> *</span></span>
+						<span class="con-prefijo">
+							<span aria-hidden="true">$</span>
+							<input class="control" type="number" id="captura_precio" min="0" step="0.01" inputmode="decimal" required>
+						</span>
+					</label>
+					<label class="campo">
+						<span class="campo-etiqueta">En existencia<span aria-hidden="true"> *</span></span>
+						<input class="control" type="number" id="captura_cantidad" min="0" step="1" inputmode="numeric" required>
+					</label>
+				</div>
+				<button class="btn btn--primario btn--ancho" type="submit" id="captura_boton">Guardar artículo</button>
+			</form>
+		</div>
+	</section>
+
+	<!-- ===================== Perfil del usuario ===================== -->
+	<section id="pantalla_perfil" hidden>
+		<header class="encabezado encabezado--estrecho">
+			<div class="encabezado-fila">
+				<h1>Perfil del usuario</h1>
+				<span class="logo-circulo" aria-hidden="true"><svg width="27" height="27"><use href="#logo"/></svg></span>
+			</div>
+			<div class="perfil-cabecera">
+				<div class="avatar" id="perfil_avatar" style="width:62px;height:62px;font-size:19.84px">?</div>
+				<div>
+					<b id="perfil_nombre">…</b>
+					<small id="perfil_email"></small>
+					<div class="perfil-foto-acciones">
+						<label class="enlace enlace--claro">
+							Cambiar foto
+							<input type="file" accept="image/*" id="perfil_archivo" hidden>
+						</label>
+						<button type="button" class="enlace enlace--claro" id="perfil_quitar_foto" hidden>Quitar foto</button>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<div class="contenido contenido--estrecho">
+			<div class="tarjeta esqueleto" id="perfil_cargando" style="height:300px"></div>
+
+			<form class="tarjeta formulario" id="form_perfil" hidden>
+				<label class="campo">
+					<span class="campo-etiqueta">Nombre<span aria-hidden="true"> *</span></span>
+					<input class="control" id="perfil_nombre_input" required>
+				</label>
+				<div class="dos-columnas">
+					<label class="campo">
+						<span class="campo-etiqueta">Apellido paterno<span aria-hidden="true"> *</span></span>
+						<input class="control" id="perfil_apellido_paterno" required>
+					</label>
+					<label class="campo">
+						<span class="campo-etiqueta">Apellido materno</span>
+						<input class="control" id="perfil_apellido_materno">
+					</label>
+				</div>
+				<label class="campo">
+					<span class="campo-etiqueta">Email<span aria-hidden="true"> *</span></span>
+					<input class="control" type="email" id="perfil_email_input" required>
+				</label>
+
+				<button type="button" class="desplegar" id="perfil_desplegar" aria-expanded="false">
+					<span id="perfil_desplegar_texto">Más datos</span>
+					<svg class="i" width="18" height="18"><use href="#i-abajo"/></svg>
+				</button>
+				<div class="formulario" id="perfil_mas_datos" hidden>
+					<label class="campo">
+						<span class="campo-etiqueta">Contraseña</span>
+						<input class="control" type="password" id="perfil_password" autocomplete="new-password" placeholder="Déjala vacía para no cambiarla">
+					</label>
+					<label class="campo">
+						<span class="campo-etiqueta">Fecha de nacimiento<span aria-hidden="true"> *</span></span>
+						<input class="control" type="datetime-local" id="perfil_fecha_nacimiento" required>
+					</label>
+					<div class="dos-columnas">
+						<label class="campo">
+							<span class="campo-etiqueta">Teléfono</span>
+							<input class="control" type="tel" id="perfil_telefono" inputmode="numeric" pattern="[0-9]{7,15}" title="Solo números">
+						</label>
+						<label class="campo">
+							<span class="campo-etiqueta">Género</span>
+							<select class="control" id="perfil_genero">
+								<option value="">Sin especificar</option>
+								<option value="M">Masculino</option>
+								<option value="F">Femenino</option>
+							</select>
+						</label>
+					</div>
+				</div>
+
+				<button class="btn btn--primario btn--ancho" type="submit" id="perfil_boton">Guardar cambios</button>
+			</form>
+
+			<section class="acciones-cuenta">
+				<button type="button" id="perfil_salir">
+					<span class="acciones-icono"><svg class="i" width="20" height="20"><use href="#i-salir"/></svg></span>
+					Salir
+				</button>
+				<button type="button" class="peligro" id="perfil_eliminar">
+					<span class="acciones-icono"><svg class="i" width="20" height="20"><use href="#i-basura"/></svg></span>
+					Eliminar perfil
+				</button>
+			</section>
+		</div>
+	</section>
+</main>
+
+<!-- ===================== Menú principal (RNF-2): barra de pestañas ===================== -->
+<nav class="pestanas" aria-label="Menú principal">
+	<a class="pestana" href="#/compra" data-ruta="compra">
+		<span class="pestana-icono"><svg class="i" width="22" height="22"><use href="#i-buscar"/></svg></span>
+		<span class="pestana-texto">Compra de artículos</span>
+	</a>
+	<a class="pestana" href="#/carrito" data-ruta="carrito">
+		<span class="pestana-icono">
+			<svg class="i" width="22" height="22"><use href="#i-carrito"/></svg>
+			<span class="burbuja" id="pestana_piezas" hidden>0</span>
+		</span>
+		<span class="pestana-texto">Carrito</span>
+	</a>
+	<a class="pestana" href="#/captura" data-ruta="captura">
+		<span class="pestana-icono"><svg class="i" width="22" height="22"><use href="#i-agregar"/></svg></span>
+		<span class="pestana-texto">Captura de artículo</span>
+	</a>
+	<a class="pestana" href="#/perfil" data-ruta="perfil">
+		<span class="pestana-icono"><svg class="i" width="22" height="22"><use href="#i-usuario"/></svg></span>
+		<span class="pestana-texto">Perfil</span>
+	</a>
+</nav>
+</div>
+
+<!-- Mensajes cortos de éxito / error (se ocultan solos) -->
+<div class="aviso-zona" id="aviso_zona" role="status" aria-live="polite"></div>
+
+<!-- Ventana de confirmación (en lugar de window.confirm) -->
+<div class="dialogo-fondo" id="dialogo_fondo" hidden>
+	<div class="dialogo" role="alertdialog" aria-modal="true" aria-labelledby="dialogo_titulo">
+		<h2 id="dialogo_titulo"></h2>
+		<p id="dialogo_mensaje"></p>
+		<div class="dialogo-acciones">
+			<button type="button" class="btn btn--secundario" id="dialogo_cancelar">Cancelar</button>
+			<button type="button" class="btn btn--peligro" id="dialogo_aceptar">Aceptar</button>
+		</div>
+	</div>
+</div>
+
+</div>
+</body>
+</html>

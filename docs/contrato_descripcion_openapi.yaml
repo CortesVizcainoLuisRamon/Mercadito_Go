@@ -1,0 +1,405 @@
+openapi: 3.0.3
+info:
+  title: Servicio web Mercadito Go
+  version: "1.0"
+  description: >
+    Servicio web REST del prototipo de comercio electrónico
+    (Tarea 7, Sistemas Distribuidos). Implementado en Java con Jersey (JAX-RS),
+    desplegado en Apache Tomcat 8.5 y con base de datos MySQL.
+    Todas las respuestas son JSON. Si la operación es correcta se regresa HTTP 200;
+    si ocurre un error se regresa HTTP 400 con {"mensaje":"<mensaje de error>"}.
+    Los métodos protegidos verifican el acceso con verifica_acceso(id_usuario, token);
+    si el token no corresponde al usuario se regresa HTTP 400 con
+    {"mensaje":"Acceso denegado"}.
+
+servers:
+  - url: https://{dominio}/Servicio/rest/ws
+    description: Tomcat con HTTPS en la máquina virtual de Azure
+    variables:
+      dominio:
+        default: localhost:8443
+        description: Dominio o IP del servidor (con puerto si no es 443)
+
+tags:
+  - name: Usuarios
+    description: Registro, inicio de sesión y perfil del usuario
+  - name: Artículos
+    description: Alta y búsqueda de artículos en el stock
+  - name: Carrito de compra
+    description: Compra de artículos y administración del carrito
+
+components:
+  parameters:
+    id_usuario:
+      name: id_usuario
+      in: query
+      required: true
+      description: Identificador del usuario que inició sesión
+      schema: {type: integer, example: 3}
+    token:
+      name: token
+      in: query
+      required: true
+      description: Token de sesión que regresó /login
+      schema: {type: string, example: "gcqYIpW6tRehNNkWy9Ri"}
+    id_articulo:
+      name: id_articulo
+      in: query
+      required: true
+      description: Identificador del artículo en la tabla stock
+      schema: {type: integer, example: 1}
+
+  schemas:
+    Respuesta:
+      type: object
+      properties:
+        mensaje: {type: string}
+      example: {mensaje: "OK"}
+
+    Sesion:
+      type: object
+      properties:
+        id_usuario: {type: integer}
+        token: {type: string, description: Cadena aleatoria de 20 caracteres}
+      example: {id_usuario: 3, token: "gcqYIpW6tRehNNkWy9Ri"}
+
+    Usuario:
+      type: object
+      required: [email, nombre, apellido_paterno, fecha_nacimiento]
+      properties:
+        email: {type: string, format: email, maxLength: 100}
+        password:
+          type: string
+          description: >
+            Contraseña cifrada con SHA-256 (hexadecimal).
+            En modifica_usuario, cadena vacía = no cambiarla.
+        nombre: {type: string, maxLength: 100}
+        apellido_paterno: {type: string, maxLength: 100}
+        apellido_materno: {type: string, maxLength: 100, nullable: true}
+        fecha_nacimiento:
+          type: string
+          format: date-time
+          example: "2003-03-07T08:30:00.000"
+        telefono: {type: integer, format: int64, nullable: true}
+        genero: {type: string, enum: [M, F], nullable: true}
+        foto: {type: string, format: byte, nullable: true, description: Foto en base64}
+      example:
+        email: usuario@ejemplo.com
+        password: 5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5
+        nombre: Luis
+        apellido_paterno: Cortés
+        apellido_materno: Reyes
+        fecha_nacimiento: "2003-03-07T08:30:00.000"
+        telefono: 5531469981
+        genero: M
+        foto: null
+
+    AltaArticulo:
+      type: object
+      required: [nombre, descripcion, precio, cantidad, id_usuario, token]
+      properties:
+        nombre: {type: string, maxLength: 100}
+        descripcion: {type: string, maxLength: 500}
+        precio: {type: number, format: decimal, minimum: 0, description: "DECIMAL(10,2)"}
+        cantidad: {type: integer, minimum: 0, description: Cantidad en existencia}
+        foto: {type: string, format: byte, nullable: true, description: Foto en base64}
+        id_usuario: {type: integer}
+        token: {type: string}
+      example:
+        nombre: Crema Alpura
+        descripcion: "Producto lácteo de origen 100% de leche de vaca, tamaño: 900 ml"
+        precio: 70.00
+        cantidad: 20
+        foto: "/9j/4AAQSkZJRgABAQ..."
+        id_usuario: 3
+        token: gcqYIpW6tRehNNkWy9Ri
+
+    Articulo:
+      type: object
+      properties:
+        id_articulo: {type: integer}
+        foto:
+          type: string
+          format: byte
+          description: Fotografía en base64 (se omite si el artículo no tiene foto)
+        nombre: {type: string}
+        descripcion: {type: string}
+        precio: {type: number}
+        cantidad: {type: integer, description: Cantidad en existencia en el stock}
+      example:
+        id_articulo: 4
+        foto: "/9j/4AAQSkZJRgABAQ..."
+        nombre: Crema Alpura
+        descripcion: "Producto lácteo de origen 100% de leche de vaca, tamaño: 900 ml"
+        precio: 70.00
+        cantidad: 20
+
+    ArticuloCarrito:
+      type: object
+      properties:
+        id_articulo: {type: integer}
+        foto: {type: string, format: byte}
+        nombre: {type: string}
+        cantidad: {type: integer, description: Cantidad comprada}
+        precio: {type: number}
+        costo: {type: number, description: cantidad × precio}
+      example:
+        id_articulo: 4
+        foto: "/9j/4AAQSkZJRgABAQ..."
+        nombre: Crema Alpura
+        cantidad: 5
+        precio: 70.00
+        costo: 350.00
+
+  responses:
+    OK:
+      description: Operación correcta
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Respuesta'}
+          example: {mensaje: "OK"}
+    AccesoDenegado:
+      description: El token no corresponde al usuario, o cualquier otro error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Respuesta'}
+          example: {mensaje: "Acceso denegado"}
+
+paths:
+
+  # ========================= USUARIOS =========================
+
+  /login:
+    get:
+      tags: [Usuarios]
+      operationId: login
+      summary: Inicia sesión y genera un token nuevo
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema: {type: string, format: email}
+        - name: password
+          in: query
+          required: true
+          description: Contraseña cifrada con SHA-256
+          schema: {type: string}
+      responses:
+        "200":
+          description: Acceso correcto
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Sesion'}
+        "400":
+          $ref: '#/components/responses/AccesoDenegado'
+
+  /alta_usuario:
+    post:
+      tags: [Usuarios]
+      operationId: alta_usuario
+      summary: Registra un usuario y su fotografía
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Usuario'}
+      responses:
+        "200":
+          description: Usuario registrado
+          content:
+            application/json:
+              example: {mensaje: "Se dio de alta el usuario"}
+        "400":
+          description: >
+            Falta un campo obligatorio ("Se debe ingresar el email",
+            "Se debe ingresar la contraseña", "Se debe ingresar el nombre",
+            "Se debe ingresar el apellido paterno",
+            "Se debe ingresar la fecha de nacimiento") o el email ya está registrado.
+          content:
+            application/json:
+              example: {mensaje: "Se debe ingresar el email"}
+
+  /consulta_usuario:
+    get:
+      tags: [Usuarios]
+      operationId: consulta_usuario
+      summary: Regresa los datos y la fotografía del usuario
+      parameters:
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/token'
+      responses:
+        "200":
+          description: Datos del usuario (sin contraseña)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Usuario'}
+        "400":
+          $ref: '#/components/responses/AccesoDenegado'
+
+  /modifica_usuario:
+    put:
+      tags: [Usuarios]
+      operationId: modifica_usuario
+      summary: Modifica los datos y la fotografía del usuario
+      parameters:
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/token'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Usuario'}
+      responses:
+        "200":
+          description: Usuario modificado
+          content:
+            application/json:
+              example: {mensaje: "Se modificó el usuario"}
+        "400":
+          $ref: '#/components/responses/AccesoDenegado'
+
+  /borra_usuario:
+    delete:
+      tags: [Usuarios]
+      operationId: borra_usuario
+      summary: Borra al usuario, su fotografía y su carrito de compra
+      parameters:
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/token'
+      responses:
+        "200":
+          description: Usuario borrado
+          content:
+            application/json:
+              example: {mensaje: "Se borró el usuario"}
+        "400":
+          $ref: '#/components/responses/AccesoDenegado'
+
+  # ========================= ARTÍCULOS =========================
+
+  /alta_articulo:
+    post:
+      tags: [Artículos]
+      operationId: alta_articulo
+      summary: "RF-BE-1. Alta de un artículo en stock y su foto en fotos_articulos"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AltaArticulo'}
+      responses:
+        "200":
+          $ref: '#/components/responses/OK'
+        "400":
+          description: >
+            "Acceso denegado", "Se debe ingresar el nombre del artículo",
+            "Se debe ingresar la descripción del artículo",
+            "Se debe ingresar un precio válido"
+            o "Se debe ingresar una cantidad válida".
+          content:
+            application/json:
+              example: {mensaje: "Acceso denegado"}
+
+  /consulta_articulos:
+    get:
+      tags: [Artículos]
+      operationId: consulta_articulos
+      summary: "RF-BE-2. Busca artículos por una palabra en nombre o descripción"
+      parameters:
+        - name: palabra
+          in: query
+          required: true
+          description: Palabra a buscar (cadena vacía regresa todos los artículos)
+          schema: {type: string, example: "limon"}
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/token'
+      responses:
+        "200":
+          description: Arreglo de artículos encontrados (vacío si no hay coincidencias)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Articulo'}
+        "400":
+          $ref: '#/components/responses/AccesoDenegado'
+
+  # ========================= CARRITO DE COMPRA =========================
+
+  /compra_articulo:
+    put:
+      tags: [Carrito de compra]
+      operationId: compra_articulo
+      summary: "RF-BE-3. Agrega un artículo al carrito y lo resta del stock"
+      parameters:
+        - $ref: '#/components/parameters/id_articulo'
+        - name: cantidad
+          in: query
+          required: true
+          description: Cantidad a comprar
+          schema: {type: integer, minimum: 1, example: 2}
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/token'
+      responses:
+        "200":
+          $ref: '#/components/responses/OK'
+        "400":
+          description: >
+            "No hay suficientes artículos en el stock" (RF-BE-3.3),
+            "El artículo no existe",
+            "La cantidad a comprar debe ser mayor a cero" o "Acceso denegado".
+          content:
+            application/json:
+              example: {mensaje: "No hay suficientes artículos en el stock"}
+
+  /consulta_carrito_compra:
+    get:
+      tags: [Carrito de compra]
+      operationId: consulta_carrito_compra
+      summary: Regresa los artículos del carrito del usuario con su costo
+      parameters:
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/token'
+      responses:
+        "200":
+          description: Artículos del carrito (vacío si el carrito no tiene artículos)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ArticuloCarrito'}
+        "400":
+          $ref: '#/components/responses/AccesoDenegado'
+
+  /elimina_articulo_carrito_compra:
+    delete:
+      tags: [Carrito de compra]
+      operationId: elimina_articulo_carrito_compra
+      summary: "RF-BE-4. Quita un artículo del carrito y regresa su cantidad al stock"
+      parameters:
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/id_articulo'
+        - $ref: '#/components/parameters/token'
+      responses:
+        "200":
+          $ref: '#/components/responses/OK'
+        "400":
+          description: >
+            "El artículo no está en el carrito de compra" o "Acceso denegado".
+          content:
+            application/json:
+              example: {mensaje: "El artículo no está en el carrito de compra"}
+
+  /elimina_carrito_compra:
+    delete:
+      tags: [Carrito de compra]
+      operationId: elimina_carrito_compra
+      summary: "RF-BE-5. Vacía el carrito del usuario y regresa las cantidades al stock"
+      parameters:
+        - $ref: '#/components/parameters/id_usuario'
+        - $ref: '#/components/parameters/token'
+      responses:
+        "200":
+          $ref: '#/components/responses/OK'
+        "400":
+          $ref: '#/components/responses/AccesoDenegado'
